@@ -32,9 +32,11 @@ class ClanNoteOverlay extends Overlay
 	private static final int NOTE_ICON_WIDTH = 14;
 	private static final int NOTE_ICON_HEIGHT = 12;
 
-	private static final int NOTE_ICON_X = 100;
+	private static final int NOTE_ICON_X = 103;
 	private static final int NOTE_ICON_Y_OFFSET = 1;
 
+    private static final int FLAG_ICON_WIDTH = 16;
+    private static final int FLAG_ICON_GAP = 2;
 	private final Client client;
 	private final BetterClanBroadcastsConfig config;
 	private final ConfigManager configManager;
@@ -116,29 +118,44 @@ class ClanNoteOverlay extends Overlay
 
 			String displayName = Text.toJagexName(Text.removeTags(member.getName()));
 			String note = configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, "note_" + displayName);
-			if (note == null)
-			{
-				continue;
-			}
+            String flagCode = configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, "flag_" + displayName);
+            BufferedImage flagImage = flagCode != null ? ClanCountryFlags.getFlag(flagCode) : null;
 
-			if (config.showIcons() && noteIcon != null && playerListCanvasLocation != null)
-			{
-				Point anchorCanvasLocation = rowWidgets.get(0).getCanvasLocation();
-				if (anchorCanvasLocation != null
-						&& playerListBounds != null
-						&& playerListBounds.contains(playerListBounds.x, anchorCanvasLocation.getY()))
-				{
-					int drawX = playerListCanvasLocation.getX() + NOTE_ICON_X;
-					int drawY = anchorCanvasLocation.getY() + NOTE_ICON_Y_OFFSET;
-					graphics.drawImage(noteIcon, drawX, drawY, null);
-				}
-			}
+            if (note == null && flagImage == null)
+            {
+                continue;
+            }
 
-			if (!menuOpen && config.showNoteTooltip() && isRowHovered(rowWidgets, mouse))
-			{
-				tooltipManager.add(new Tooltip(note));
-			}
-		}
+            Point anchorCanvasLocation = rowWidgets.get(0).getCanvasLocation();
+            boolean anchorVisible = anchorCanvasLocation != null
+                    && playerListBounds != null
+                    && playerListBounds.contains(playerListBounds.x, anchorCanvasLocation.getY());
+
+            if (anchorVisible && playerListCanvasLocation != null)
+            {
+                if (note != null && config.showIcons() && noteIcon != null)
+                {
+                    int noteX = playerListCanvasLocation.getX() + NOTE_ICON_X;
+                    int noteY = anchorCanvasLocation.getY() + NOTE_ICON_Y_OFFSET;
+                    graphics.drawImage(noteIcon, noteX, noteY, null);
+                }
+
+                if (flagImage != null && config.showFlagIcons())
+                {
+                    int flagX = playerListCanvasLocation.getX() + NOTE_ICON_X - FLAG_ICON_WIDTH - FLAG_ICON_GAP;
+                    int flagY = anchorCanvasLocation.getY() + NOTE_ICON_Y_OFFSET;
+                    graphics.drawImage(flagImage, flagX, flagY, null);
+                }
+            }
+
+            if (!menuOpen && config.showNoteTooltip() && isRowHovered(rowWidgets, mouse))
+            {
+                String tooltipText = flagCode != null && note != null
+                        ? flagCode + " - " + note
+                        : flagCode != null ? flagCode : note;
+                tooltipManager.add(new Tooltip(tooltipText));
+            }
+        }
 
 		return null;
 	}
