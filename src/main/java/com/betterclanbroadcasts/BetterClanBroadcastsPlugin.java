@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.MenuAction;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
@@ -42,7 +43,13 @@ public class BetterClanBroadcastsPlugin extends Plugin
 	private static final String NOTE_PROMPT_FORMAT = "%s's Notes<br>" +
 			ColorUtil.prependColorTag("(Limit %s Characters)", new Color(0, 0, 170));
 
-	private static final int CLAN_GROUP_ID = WidgetUtil.componentToInterface(InterfaceID.ClansSidepanel.PLAYERLIST);
+    private static final String ADD_FLAG = "Add Flag";
+    private static final String EDIT_FLAG = "Edit Flag";
+    private static final String FLAG_KEY_PREFIX = "flag_";
+    private static final String FLAG_PROMPT_FORMAT = "%s's Country Code<br>" +
+            ColorUtil.prependColorTag("(e.g. US, GB, GB-SCT, JP)", new Color(0, 0, 170));
+
+    private static final int CLAN_GROUP_ID = WidgetUtil.componentToInterface(InterfaceID.ClansSidepanel.PLAYERLIST);
 
 	@Inject
 	private Client client;
@@ -187,17 +194,59 @@ public class BetterClanBroadcastsPlugin extends Plugin
 										return;
 									}
 
-									content = Text.removeTags(content).trim();
-									log.debug("Set clan note for '{}': '{}'", sanitizedTarget, content);
-									setClanMemberNote(sanitizedTarget, content);
-								}).build();
-					});
-		}
-		else if (hoveredClanMember != null)
-		{
-			hoveredClanMember = null;
-		}
-	}
+                                    content = Text.removeTags(content).trim();
+                                    log.debug("Set clan note for '{}': '{}'", sanitizedTarget, content);
+                                    setClanMemberNote(sanitizedTarget, content);
+                                }).build();
+                    });
+
+            String flagMenuTarget = Text.toJagexName(Text.removeTags(event.getTarget()));
+            String existingFlagCode = getClanMemberFlag(flagMenuTarget);
+
+            client.createMenuEntry(-1)
+                    .setOption(existingFlagCode == null ? ADD_FLAG : EDIT_FLAG)
+                    .setType(MenuAction.RUNELITE)
+                    .setTarget(event.getTarget())
+                    .onClick(e ->
+                    {
+                        String sanitizedTarget = Text.toJagexName(Text.removeTags(e.getTarget()));
+                        String currentCode = getClanMemberFlag(sanitizedTarget);
+
+                        chatboxPanelManager.openTextInput(String.format(FLAG_PROMPT_FORMAT, sanitizedTarget))
+                                .value(Strings.nullToEmpty(currentCode))
+                                .onDone((content) ->
+                                {
+                                    if (content == null)
+                                    {
+                                        return;
+                                    }
+
+                                    String code = Text.removeTags(content).trim().toUpperCase();
+
+                                    if (code.isEmpty())
+                                    {
+                                        log.debug("Cleared clan flag for '{}'", sanitizedTarget);
+                                        setClanMemberFlag(sanitizedTarget, null);
+                                        return;
+                                    }
+
+                                    if (!ClanCountryFlags.isValidCode(code))
+                                    {
+                                        clientThread.invoke(() -> client.addChatMessage(ChatMessageType.CONSOLE, "",
+                                                ColorUtil.wrapWithColorTag("Invalid country code: " + code, Color.RED), null));
+                                        return;
+                                    }
+
+                                    log.debug("Set clan flag for '{}': '{}'", sanitizedTarget, code);
+                                    setClanMemberFlag(sanitizedTarget, code);
+                                }).build();
+                    });
+        }
+        else if (hoveredClanMember != null)
+        {
+            hoveredClanMember = null;
+        }
+    }
 
 	private void setClanMemberNote(String displayName, String note)
 	{
@@ -217,9 +266,27 @@ public class BetterClanBroadcastsPlugin extends Plugin
 		return configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, NOTE_KEY_PREFIX + displayName);
 	}
 
-	private void setHoveredClanMember(String displayName)
-	{
-		hoveredClanMember = null;
+    private void setClanMemberFlag(String displayName, @Nullable String countryCode)
+    {
+        if (Strings.isNullOrEmpty(countryCode))
+        {
+            configManager.unsetConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName);
+        }
+        else
+        {
+            configManager.setConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName, countryCode);
+        }
+    }
+
+    @Nullable
+    private String getClanMemberFlag(String displayName)
+    {
+        return configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName);
+    }
+
+    private void setHoveredClanMember(String displayName)
+    {
+        hoveredClanMember = null;
 
 		if (!config.showNoteTooltip() || Strings.isNullOrEmpty(displayName))
 		{

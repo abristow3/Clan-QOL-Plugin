@@ -38,4 +38,14 @@ public interface BetterClanBroadcastsConfig extends Config
 	{
 		return true;
 	}
+
+    @ConfigItem(
+            keyName = "showFlagIcons",
+            name = "Show country flags",
+            description = "Show a flag icon in the clan member list next to members who have a country set"
+    )
+    default boolean showFlagIcons()
+    {
+        return true;
+    }
 }
