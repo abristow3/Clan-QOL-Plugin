@@ -6,6 +6,10 @@ Extends the friend notes plugin and introduces notes for clan members.
 
 https://github.com/user-attachments/assets/3f79d1ae-2cc2-4a3b-8df3-bb3f6d5a87a5
 
+## Clan member country flags
+Allows you to add country flag icons next to clan members using the 2-digit country code
+
+
 
 ## Clan Broadcast Fixes:
 It fixes clan ranks for:
