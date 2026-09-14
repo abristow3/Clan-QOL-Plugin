@@ -107,6 +107,12 @@ class ClanNoteOverlay extends Overlay
 		boolean menuOpen = client.isMenuOpen();
 		Point mouse = client.getMouseCanvasPosition();
 
+        Rectangle originalClip = graphics.getClipBounds();
+        if (playerListBounds != null)
+        {
+            graphics.setClip(playerListBounds);
+        }
+
 		for (Map.Entry<Integer, List<Widget>> entry : rowsByIndex.entrySet())
 		{
 			List<Widget> rowWidgets = entry.getValue();
@@ -127,11 +133,8 @@ class ClanNoteOverlay extends Overlay
             }
 
             Point anchorCanvasLocation = rowWidgets.get(0).getCanvasLocation();
-            boolean anchorVisible = anchorCanvasLocation != null
-                    && playerListBounds != null
-                    && playerListBounds.contains(playerListBounds.x, anchorCanvasLocation.getY());
 
-            if (anchorVisible && playerListCanvasLocation != null)
+            if (anchorCanvasLocation != null && playerListCanvasLocation != null)
             {
                 if (note != null && config.showIcons() && noteIcon != null)
                 {
@@ -156,6 +159,8 @@ class ClanNoteOverlay extends Overlay
                 tooltipManager.add(new Tooltip(tooltipText));
             }
         }
+
+        graphics.setClip(originalClip);
 
 		return null;
 	}
