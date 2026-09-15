@@ -3,7 +3,8 @@ package com.betterclanbroadcasts;
 import com.google.common.base.Strings;
 import com.google.inject.Provides;
 import java.awt.Color;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import lombok.Getter;
@@ -11,10 +12,15 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.MenuAction;
+import net.runelite.api.MenuEntry;
+import net.runelite.api.Point;
+import net.runelite.api.clan.ClanChannel;
+import net.runelite.api.clan.ClanChannelMember;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
-import net.runelite.api.events.MenuEntryAdded;
+import net.runelite.api.events.MenuOpened;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -35,7 +41,6 @@ import net.runelite.client.util.Text;
 )
 public class BetterClanBroadcastsPlugin extends Plugin
 {
-	private static final Set<String> NOTE_ANCHOR_OPTIONS = Set.of("Add ignore", "Remove friend");
 	private static final String ADD_NOTE = "Add Note";
 	private static final String EDIT_NOTE = "Edit Note";
 	private static final String NOTE_KEY_PREFIX = "note_";
@@ -167,19 +172,27 @@ public class BetterClanBroadcastsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onMenuEntryAdded(MenuEntryAdded event)
+	public void onMenuOpened(MenuOpened event)
 	{
-		int groupId = WidgetUtil.componentToInterface(event.getActionParam1());
+		MenuEntry clanEntry = findClanMenuEntry(event.getMenuEntries());
+		String target = clanEntry != null ? clanEntry.getTarget() : resolveClanMemberUnderMouse();
 
-		if (groupId == CLAN_GROUP_ID && NOTE_ANCHOR_OPTIONS.contains(event.getOption()))
+		if (target == null)
 		{
-			// clan member names carry color tags same as friends do
-			setHoveredClanMember(Text.toJagexName(Text.removeTags(event.getTarget())));
+			if (hoveredClanMember != null)
+			{
+				hoveredClanMember = null;
+			}
+			return;
+		}
+
+		// clan member names carry color tags same as friends do
+		setHoveredClanMember(Text.toJagexName(Text.removeTags(target)));
 
 			client.createMenuEntry(-1)
 					.setOption(hoveredClanMember == null || hoveredClanMember.getNote() == null ? ADD_NOTE : EDIT_NOTE)
 					.setType(MenuAction.RUNELITE)
-					.setTarget(event.getTarget())
+					.setTarget(target)
 					.onClick(e ->
 					{
 						String sanitizedTarget = Text.toJagexName(Text.removeTags(e.getTarget()));
@@ -194,19 +207,18 @@ public class BetterClanBroadcastsPlugin extends Plugin
 										return;
 									}
 
-                                    content = Text.removeTags(content).trim();
-                                    log.debug("Set clan note for '{}': '{}'", sanitizedTarget, content);
-                                    setClanMemberNote(sanitizedTarget, content);
-                                }).build();
-                    });
+								content = Text.removeTags(content).trim();
+								log.debug("Set clan note for '{}': '{}'", sanitizedTarget, content);
+								setClanMemberNote(sanitizedTarget, content);
+							}).build();
+				});
 
-            String flagMenuTarget = Text.toJagexName(Text.removeTags(event.getTarget()));
-            String existingFlagCode = getClanMemberFlag(flagMenuTarget);
+		String existingFlagCode = getClanMemberFlag(Text.toJagexName(Text.removeTags(target)));
 
             client.createMenuEntry(-1)
                     .setOption(existingFlagCode == null ? ADD_FLAG : EDIT_FLAG)
                     .setType(MenuAction.RUNELITE)
-                    .setTarget(event.getTarget())
+                    .setTarget(target)
                     .onClick(e ->
                     {
                         String sanitizedTarget = Text.toJagexName(Text.removeTags(e.getTarget()));
@@ -237,16 +249,64 @@ public class BetterClanBroadcastsPlugin extends Plugin
                                         return;
                                     }
 
-                                    log.debug("Set clan flag for '{}': '{}'", sanitizedTarget, code);
-                                    setClanMemberFlag(sanitizedTarget, code);
-                                }).build();
-                    });
-        }
-        else if (hoveredClanMember != null)
-        {
-            hoveredClanMember = null;
-        }
-    }
+								log.debug("Set clan flag for '{}': '{}'", sanitizedTarget, code);
+								setClanMemberFlag(sanitizedTarget, code);
+							}).build();
+				});
+	}
+
+	private static MenuEntry findClanMenuEntry(MenuEntry[] menuEntries)
+	{
+		for (MenuEntry entry : menuEntries)
+		{
+			int groupId = WidgetUtil.componentToInterface(entry.getParam1());
+			if (groupId == CLAN_GROUP_ID)
+			{
+				return entry;
+			}
+		}
+
+		return null;
+	}
+
+	// fallback for rows where the game adds no clan-group entry at all (e.g. right-clicking
+	// your own name only ever shows "Cancel") - hit-tests the mouse against the row widgets
+	// directly, same approach the overlay uses to resolve which member is hovered
+	private String resolveClanMemberUnderMouse()
+	{
+		ClanChannel clanChannel = client.getClanChannel();
+		Widget playerList = client.getWidget(InterfaceID.ClansSidepanel.PLAYERLIST);
+		if (clanChannel == null || playerList == null)
+		{
+			return null;
+		}
+
+		Widget[] children = playerList.getDynamicChildren();
+		if (children == null || children.length == 0)
+		{
+			return null;
+		}
+
+		Map<String, ClanChannelMember> membersByName = ClanPlayerListRows.mapMembersByName(clanChannel);
+		Map<Integer, List<Widget>> rowsByIndex = ClanPlayerListRows.groupByRow(children);
+		Point mouse = client.getMouseCanvasPosition();
+
+		for (List<Widget> rowWidgets : rowsByIndex.values())
+		{
+			if (!ClanPlayerListRows.isRowAtPoint(rowWidgets, mouse))
+			{
+				continue;
+			}
+
+			ClanChannelMember member = ClanPlayerListRows.findMember(rowWidgets, membersByName);
+			if (member != null)
+			{
+				return member.getName();
+			}
+		}
+
+		return null;
+	}
 
 	private void setClanMemberNote(String displayName, String note)
 	{

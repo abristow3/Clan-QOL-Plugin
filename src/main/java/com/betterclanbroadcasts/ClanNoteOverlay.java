@@ -4,8 +4,6 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
@@ -28,15 +26,14 @@ import net.runelite.client.util.Text;
 @Slf4j
 class ClanNoteOverlay extends Overlay
 {
-	private static final int CLAN_ROW_HEIGHT = 15;
 	private static final int NOTE_ICON_WIDTH = 14;
 	private static final int NOTE_ICON_HEIGHT = 12;
 
 	private static final int NOTE_ICON_X = 103;
 	private static final int NOTE_ICON_Y_OFFSET = 1;
 
-    private static final int FLAG_ICON_WIDTH = 16;
-    private static final int FLAG_ICON_GAP = 2;
+	private static final int FLAG_ICON_WIDTH = 16;
+	private static final int FLAG_ICON_GAP = 2;
 	private final Client client;
 	private final BetterClanBroadcastsConfig config;
 	private final ConfigManager configManager;
@@ -84,23 +81,8 @@ class ClanNoteOverlay extends Overlay
 			return null;
 		}
 
-		Map<String, ClanChannelMember> membersByName = new HashMap<>();
-		for (ClanChannelMember member : clanChannel.getMembers())
-		{
-			membersByName.put(normalizeForMatching(member.getName()), member);
-		}
-
-		Map<Integer, List<Widget>> rowsByIndex = new HashMap<>();
-		for (Widget child : children)
-		{
-			if (child == null || child.isHidden())
-			{
-				continue;
-			}
-
-			int rowIndex = Math.round(child.getOriginalY() / (float) CLAN_ROW_HEIGHT);
-			rowsByIndex.computeIfAbsent(rowIndex, k -> new ArrayList<>()).add(child);
-		}
+		Map<String, ClanChannelMember> membersByName = ClanPlayerListRows.mapMembersByName(clanChannel);
+		Map<Integer, List<Widget>> rowsByIndex = ClanPlayerListRows.groupByRow(children);
 
 		Point playerListCanvasLocation = playerList.getCanvasLocation();
 		Rectangle playerListBounds = playerList.getBounds();
@@ -116,7 +98,7 @@ class ClanNoteOverlay extends Overlay
 		for (Map.Entry<Integer, List<Widget>> entry : rowsByIndex.entrySet())
 		{
 			List<Widget> rowWidgets = entry.getValue();
-			ClanChannelMember member = findMember(rowWidgets, membersByName);
+			ClanChannelMember member = ClanPlayerListRows.findMember(rowWidgets, membersByName);
 			if (member == null)
 			{
 				continue;
@@ -151,7 +133,7 @@ class ClanNoteOverlay extends Overlay
                 }
             }
 
-            if (!menuOpen && config.showNoteTooltip() && isRowHovered(rowWidgets, mouse))
+			if (!menuOpen && config.showNoteTooltip() && ClanPlayerListRows.isRowAtPoint(rowWidgets, mouse))
             {
                 String tooltipText = flagCode != null && note != null
                         ? flagCode + " - " + note
@@ -163,44 +145,5 @@ class ClanNoteOverlay extends Overlay
         graphics.setClip(originalClip);
 
 		return null;
-	}
-
-	private boolean isRowHovered(List<Widget> rowWidgets, Point mouse)
-	{
-		for (Widget widget : rowWidgets)
-		{
-			Rectangle bounds = widget.getBounds();
-			if (bounds != null && bounds.contains(mouse.getX(), mouse.getY()))
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	private ClanChannelMember findMember(List<Widget> rowWidgets, Map<String, ClanChannelMember> membersByName)
-	{
-		for (Widget widget : rowWidgets)
-		{
-			ClanChannelMember member = membersByName.get(normalizeForMatching(widget.getText()));
-			if (member != null)
-			{
-				return member;
-			}
-
-			member = membersByName.get(normalizeForMatching(widget.getName()));
-			if (member != null)
-			{
-				return member;
-			}
-		}
-
-		return null;
-	}
-
-	private static String normalizeForMatching(String name)
-	{
-		return name == null ? "" : Text.toJagexName(Text.removeTags(name)).toLowerCase();
 	}
 }
