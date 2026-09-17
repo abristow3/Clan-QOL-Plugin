@@ -48,4 +48,14 @@ public interface BetterClanBroadcastsConfig extends Config
     {
         return true;
     }
+
+    @ConfigItem(
+            keyName = "showTimezoneText",
+            name = "Show timezone text",
+            description = "Show live local time in the clan member list next to members who have a timezone set"
+    )
+    default boolean showTimezoneText()
+    {
+        return true;
+    }
 }

@@ -1,15 +1,29 @@
 # Clan QOL
 A plugin that enhances the clan chat interface.
 
+
+## Clan Member Timezones
+Allows you to add timezone codes, IANA zone codes, or static time offsets for clan members
+
+Supported timezones formats:
+- Zone code: "EST"
+- IANA zone: "America/New_York"
+- UTC offsets: "+05:30"
+
+<img width="254" height="317" alt="image" src="https://github.com/user-attachments/assets/72dd4739-1fb7-438c-8cde-c7ca73c3ef5a" />
+
+
 ## Clan member notes
 Extends the friend notes plugin and introduces notes for clan members.
 
-https://github.com/user-attachments/assets/3f79d1ae-2cc2-4a3b-8df3-bb3f6d5a87a5
+<img width="254" height="317" alt="image" src="https://github.com/user-attachments/assets/90a60fcf-41bd-4241-bb8f-bc8b0a6726e3" />
 
-## Clan member country flags
-Allows you to add country flag icons next to clan members using the 2-digit country code
+
+## Clan Member Country Flags
+Allows you to country flag icons next to clan members using the 2-digit country code
 
 <img width="192" height="314" alt="Screenshot 2026-09-13 at 11 31 45 AM" src="https://github.com/user-attachments/assets/c8c35f8b-772a-4394-bece-838c35bf7cc7" />
+
 
 ## Clan Broadcast Fixes:
 It fixes clan ranks for:

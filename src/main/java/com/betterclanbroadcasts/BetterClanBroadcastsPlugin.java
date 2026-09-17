@@ -54,6 +54,15 @@ public class BetterClanBroadcastsPlugin extends Plugin
     private static final String FLAG_PROMPT_FORMAT = "%s's Country Code<br>" +
             ColorUtil.prependColorTag("(e.g. US, GB, GB-SCT, JP)", new Color(0, 0, 170));
 
+    private static final String ADD_TIMEZONE = "Add Timezone";
+    private static final String EDIT_TIMEZONE = "Edit Timezone";
+    private static final String TIMEZONE_KEY_PREFIX = "timezone_";
+    private static final String TIMEZONE_PROMPT_FORMAT = "%s's Timezone<br>" +
+            ColorUtil.prependColorTag("(e.g. America/New_York, EST, +05:00)", new Color(0, 0, 170));
+
+    private static final String SHOW_TIME_ALL = "Show Time for All";
+    private static final String SHOW_FLAGS_ALL = "Show Flags for All";
+
     private static final int CLAN_GROUP_ID = WidgetUtil.componentToInterface(InterfaceID.ClansSidepanel.PLAYERLIST);
 
 	@Inject
@@ -72,6 +81,8 @@ public class BetterClanBroadcastsPlugin extends Plugin
 	private ChatboxPanelManager chatboxPanelManager;
 	@Inject
 	private ClanNoteOverlay clanNoteOverlay;
+    @Inject
+    private ClanDisplayModeState displayModeState;
 
 	private ClanRankPrefixer clanRankPrefixer;
 	private ClanPlayerListSorter clanPlayerListSorter;
@@ -79,12 +90,14 @@ public class BetterClanBroadcastsPlugin extends Plugin
 
 	private static final int SORT_BUTTON_Y = 33;
 	private static final int WORLD_SORT_BUTTON_X = 140;
+    private static final int FLAG_TIME_TOGGLE_X = 108;
 	private static final int NAME_SORT_BUTTON_X = 40;
 	private static final int RANK_SORT_BUTTON_X = 13;
 
 	private ClanSortToggleButton worldSortButton;
 	private ClanSortToggleButton nameSortButton;
 	private ClanSortToggleButton rankSortButton;
+    private ClanSortToggleButton flagTimeToggleButton;
 
 	@Getter
 	private HoveredClanMember hoveredClanMember = null;
@@ -123,7 +136,15 @@ public class BetterClanBroadcastsPlugin extends Plugin
 				clanPlayerListSorter::setRankThenSpriteAscending,
 				clanPlayerListSorter::setRankThenSpriteDescending);
 		rankSortButton.startUp();
-	}
+
+        flagTimeToggleButton = new ClanSortToggleButton(client, clientThread,
+                FLAG_TIME_TOGGLE_X, SORT_BUTTON_Y,
+                "Show flags", "Show timezones",
+                () -> !displayModeState.isShowTimezones(),
+                () -> displayModeState.setShowTimezones(false),
+                () -> displayModeState.setShowTimezones(true));
+        flagTimeToggleButton.startUp();
+    }
 
 	@Override
 	protected void shutDown() throws Exception
@@ -145,6 +166,9 @@ public class BetterClanBroadcastsPlugin extends Plugin
 
 		rankSortButton.reset();
 		rankSortButton = null;
+
+        flagTimeToggleButton.reset();
+        flagTimeToggleButton = null;
 	}
 
 	@Subscribe
@@ -169,6 +193,7 @@ public class BetterClanBroadcastsPlugin extends Plugin
 		worldSortButton.onGameTick();
 		nameSortButton.onGameTick();
 		rankSortButton.onGameTick();
+        flagTimeToggleButton.onGameTick();
 	}
 
 	@Subscribe
@@ -253,6 +278,58 @@ public class BetterClanBroadcastsPlugin extends Plugin
 								setClanMemberFlag(sanitizedTarget, code);
 							}).build();
 				});
+
+        String existingTimezoneId = getClanMemberTimezone(Text.toJagexName(Text.removeTags(target)));
+
+        client.createMenuEntry(-1)
+                .setOption(existingTimezoneId == null ? ADD_TIMEZONE : EDIT_TIMEZONE)
+                .setType(MenuAction.RUNELITE)
+                .setTarget(target)
+                .onClick(e ->
+                {
+                    String sanitizedTarget = Text.toJagexName(Text.removeTags(e.getTarget()));
+                    String currentTimezone = getClanMemberTimezone(sanitizedTarget);
+
+                    chatboxPanelManager.openTextInput(String.format(TIMEZONE_PROMPT_FORMAT, sanitizedTarget))
+                            .value(Strings.nullToEmpty(currentTimezone))
+                            .onDone((content) ->
+                            {
+                                if (content == null)
+                                {
+                                    return;
+                                }
+
+                                String rawInput = Text.removeTags(content).trim();
+
+                                if (rawInput.isEmpty())
+                                {
+                                    log.debug("Cleared clan timezone for '{}'", sanitizedTarget);
+                                    setClanMemberTimezone(sanitizedTarget, null);
+                                    return;
+                                }
+
+                                String normalized = ClanTimezones.normalize(rawInput);
+
+                                if (normalized == null)
+                                {
+                                    clientThread.invoke(() -> client.addChatMessage(ChatMessageType.CONSOLE, "",
+                                            ColorUtil.wrapWithColorTag("Invalid timezone: " + rawInput, Color.RED), null));
+                                    return;
+                                }
+
+                                log.debug("Set clan timezone for '{}': '{}'", sanitizedTarget, normalized);
+                                setClanMemberTimezone(sanitizedTarget, normalized);
+                            }).build();
+                });
+
+        // mass toggle, also reachable via the header button
+        boolean currentlyShowingTimezones = displayModeState.isShowTimezones();
+
+        client.createMenuEntry(-1)
+                .setOption(currentlyShowingTimezones ? SHOW_FLAGS_ALL : SHOW_TIME_ALL)
+                .setType(MenuAction.RUNELITE)
+                .setTarget("")
+                .onClick(e -> displayModeState.setShowTimezones(!currentlyShowingTimezones));
 	}
 
 	private static MenuEntry findClanMenuEntry(MenuEntry[] menuEntries)
@@ -269,9 +346,6 @@ public class BetterClanBroadcastsPlugin extends Plugin
 		return null;
 	}
 
-	// fallback for rows where the game adds no clan-group entry at all (e.g. right-clicking
-	// your own name only ever shows "Cancel") - hit-tests the mouse against the row widgets
-	// directly, same approach the overlay uses to resolve which member is hovered
 	private String resolveClanMemberUnderMouse()
 	{
 		ClanChannel clanChannel = client.getClanChannel();
@@ -342,6 +416,24 @@ public class BetterClanBroadcastsPlugin extends Plugin
     private String getClanMemberFlag(String displayName)
     {
         return configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName);
+    }
+
+    private void setClanMemberTimezone(String displayName, @Nullable String zoneId)
+    {
+        if (Strings.isNullOrEmpty(zoneId))
+        {
+            configManager.unsetConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, TIMEZONE_KEY_PREFIX + displayName);
+        }
+        else
+        {
+            configManager.setConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, TIMEZONE_KEY_PREFIX + displayName, zoneId);
+        }
+    }
+
+    @Nullable
+    private String getClanMemberTimezone(String displayName)
+    {
+        return configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, TIMEZONE_KEY_PREFIX + displayName);
     }
 
     private void setHoveredClanMember(String displayName)
