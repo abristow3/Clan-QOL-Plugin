@@ -1,6 +1,8 @@
 # Clan QOL
 A plugin that enhances the clan chat interface.
 
+[![Active Installs](http://img.shields.io/endpoint?url=https://api.runelite.net/pluginhub/shields/installs/plugin/better-clan-broadcasts)](https://runelite.net/plugin-hub/show/better-clan-broadcasts)
+
 
 ## Clan Member Timezones
 Allows you to add timezone codes, IANA zone codes, or static time offsets for clan members
