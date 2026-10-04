@@ -1,5 +1,12 @@
-package com.betterclanbroadcasts;
+package com.clanqol;
 
+import com.clanqol.broadcasts.ClanCaIconMaintainer;
+import com.clanqol.broadcasts.ClanRankPrefixer;
+import com.clanqol.clanpanel.*;
+import com.clanqol.utils.ClanCsvSync;
+import com.clanqol.utils.ClanPlayerListRows;
+import com.clanqol.utils.ClanSortToggleButton;
+import com.clanqol.utils.HoveredClanMember;
 import com.google.common.base.Strings;
 import com.google.inject.Provides;
 import java.awt.Color;
@@ -32,6 +39,11 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.Text;
+import java.awt.image.BufferedImage;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.util.ImageUtil;
+import net.runelite.client.events.ConfigChanged;
 
 @Slf4j
 @PluginDescriptor(
@@ -39,7 +51,7 @@ import net.runelite.client.util.Text;
 		description = "Prepends clan rank icons to clan broadcast messages",
 		tags = {"clan", "broadcast", "rank", "icon", "chat", "clanchat", "qol", "filtering", "filter", "notes"}
 )
-public class BetterClanBroadcastsPlugin extends Plugin
+public class ClanQolPlugin extends Plugin
 {
 	private static final String ADD_NOTE = "Add Note";
 	private static final String EDIT_NOTE = "Edit Note";
@@ -68,7 +80,7 @@ public class BetterClanBroadcastsPlugin extends Plugin
 	@Inject
 	private Client client;
 	@Inject
-	private BetterClanBroadcastsConfig config;
+	private ClanQolConfig config;
 	@Inject
 	private ClientThread clientThread;
 	@Inject
@@ -83,6 +95,12 @@ public class BetterClanBroadcastsPlugin extends Plugin
 	private ClanNoteOverlay clanNoteOverlay;
     @Inject
     private ClanDisplayModeState displayModeState;
+    @Inject
+    private ClientToolbar clientToolbar;
+    @Inject
+    private ClanQolPanel clanQolPanel;
+
+    private NavigationButton navButton;
 
 	private ClanRankPrefixer clanRankPrefixer;
 	private ClanPlayerListSorter clanPlayerListSorter;
@@ -144,6 +162,17 @@ public class BetterClanBroadcastsPlugin extends Plugin
                 () -> displayModeState.setShowTimezones(false),
                 () -> displayModeState.setShowTimezones(true));
         flagTimeToggleButton.startUp();
+
+        ClanCsvSync.syncField(configManager);
+
+        BufferedImage panelIcon = ImageUtil.loadImageResource(getClass(), "/clanqolnavicon.png");
+        navButton = NavigationButton.builder()
+                .tooltip("Clan QOL")
+                .icon(panelIcon)
+                .priority(5)
+                .panel(clanQolPanel)
+                .build();
+        clientToolbar.addNavigation(navButton);
     }
 
 	@Override
@@ -169,7 +198,29 @@ public class BetterClanBroadcastsPlugin extends Plugin
 
         flagTimeToggleButton.reset();
         flagTimeToggleButton = null;
+
+        clientToolbar.removeNavigation(navButton);
+        navButton = null;
 	}
+
+    @Subscribe
+    public void onConfigChanged(ConfigChanged event)
+    {
+        if (!ClanQolConfig.CONFIG_GROUP.equals(event.getGroup()) || !ClanCsvSync.CSV_KEY.equals(event.getKey()))
+        {
+            return;
+        }
+
+        // blank or reset value means everything is deleted
+        String csv = Strings.nullToEmpty(event.getNewValue());
+        ClanCsvSync.Result result = ClanCsvSync.apply(configManager, csv, true);
+        if (!result.errors.isEmpty())
+        {
+            log.warn("Clan QOL skipped invalid csv entries: {}", String.join("; ", result.errors));
+        }
+
+        ClanCsvSync.syncField(configManager);
+    }
 
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
@@ -386,54 +437,60 @@ public class BetterClanBroadcastsPlugin extends Plugin
 	{
 		if (Strings.isNullOrEmpty(note))
 		{
-			configManager.unsetConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, NOTE_KEY_PREFIX + displayName);
+			configManager.unsetConfiguration(ClanQolConfig.CONFIG_GROUP, NOTE_KEY_PREFIX + displayName);
 		}
 		else
 		{
-			configManager.setConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, NOTE_KEY_PREFIX + displayName, note);
+			configManager.setConfiguration(ClanQolConfig.CONFIG_GROUP, NOTE_KEY_PREFIX + displayName, note);
 		}
+
+        ClanCsvSync.syncField(configManager);
 	}
 
 	@Nullable
 	private String getClanMemberNote(String displayName)
 	{
-		return configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, NOTE_KEY_PREFIX + displayName);
+		return configManager.getConfiguration(ClanQolConfig.CONFIG_GROUP, NOTE_KEY_PREFIX + displayName);
 	}
 
     private void setClanMemberFlag(String displayName, @Nullable String countryCode)
     {
         if (Strings.isNullOrEmpty(countryCode))
         {
-            configManager.unsetConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName);
+            configManager.unsetConfiguration(ClanQolConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName);
         }
         else
         {
-            configManager.setConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName, countryCode);
+            configManager.setConfiguration(ClanQolConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName, countryCode);
         }
+
+        ClanCsvSync.syncField(configManager);
     }
 
     @Nullable
     private String getClanMemberFlag(String displayName)
     {
-        return configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName);
+        return configManager.getConfiguration(ClanQolConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName);
     }
 
     private void setClanMemberTimezone(String displayName, @Nullable String zoneId)
     {
         if (Strings.isNullOrEmpty(zoneId))
         {
-            configManager.unsetConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, TIMEZONE_KEY_PREFIX + displayName);
+            configManager.unsetConfiguration(ClanQolConfig.CONFIG_GROUP, TIMEZONE_KEY_PREFIX + displayName);
         }
         else
         {
-            configManager.setConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, TIMEZONE_KEY_PREFIX + displayName, zoneId);
+            configManager.setConfiguration(ClanQolConfig.CONFIG_GROUP, TIMEZONE_KEY_PREFIX + displayName, zoneId);
         }
+
+        ClanCsvSync.syncField(configManager);
     }
 
     @Nullable
     private String getClanMemberTimezone(String displayName)
     {
-        return configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, TIMEZONE_KEY_PREFIX + displayName);
+        return configManager.getConfiguration(ClanQolConfig.CONFIG_GROUP, TIMEZONE_KEY_PREFIX + displayName);
     }
 
     private void setHoveredClanMember(String displayName)
@@ -453,8 +510,8 @@ public class BetterClanBroadcastsPlugin extends Plugin
 	}
 
 	@Provides
-	BetterClanBroadcastsConfig provideConfig(ConfigManager configManager)
+	ClanQolConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(BetterClanBroadcastsConfig.class);
+		return configManager.getConfig(ClanQolConfig.class);
 	}
 }

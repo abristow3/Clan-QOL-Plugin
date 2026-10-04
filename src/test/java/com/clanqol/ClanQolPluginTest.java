@@ -1,13 +1,13 @@
-package com.betterclanbroadcasts;
+package com.clanqol;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 
-public class BetterClanBroadcastsPluginTest
+public class ClanQolPluginTest
 {
 	public static void main(String[] args) throws Exception
 	{
-		ExternalPluginManager.loadBuiltin(BetterClanBroadcastsPlugin.class);
+		ExternalPluginManager.loadBuiltin(ClanQolPlugin.class);
 		RuneLite.main(args);
 	}
 }

@@ -1,4 +1,4 @@
-package com.betterclanbroadcasts;
+package com.clanqol.clanpanel;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -10,6 +10,9 @@ import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
+
+import com.clanqol.ClanQolConfig;
+import com.clanqol.utils.ClanPlayerListRows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
@@ -27,7 +30,7 @@ import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.Text;
 
 @Slf4j
-class ClanNoteOverlay extends Overlay
+public class ClanNoteOverlay extends Overlay
 {
 	private static final int NOTE_ICON_WIDTH = 12;
 	private static final int NOTE_ICON_HEIGHT = 12;
@@ -41,7 +44,7 @@ class ClanNoteOverlay extends Overlay
     private static final float TIME_FONT_SIZE = 14f;
     private static final int ROW_HEIGHT = 15;
 	private final Client client;
-	private final BetterClanBroadcastsConfig config;
+	private final ClanQolConfig config;
 	private final ConfigManager configManager;
 	private final TooltipManager tooltipManager;
     private final ClanDisplayModeState displayModeState;
@@ -50,7 +53,7 @@ class ClanNoteOverlay extends Overlay
 	private int lastLoggedTick = -1;
 
 	@Inject
-	private ClanNoteOverlay(Client client, BetterClanBroadcastsConfig config, ConfigManager configManager,
+	private ClanNoteOverlay(Client client, ClanQolConfig config, ConfigManager configManager,
 							TooltipManager tooltipManager, ClanDisplayModeState displayModeState)
 	{
 		this.client = client;
@@ -114,9 +117,9 @@ class ClanNoteOverlay extends Overlay
 			}
 
 			String displayName = Text.toJagexName(Text.removeTags(member.getName()));
-			String note = configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, "note_" + displayName);
-            String flagCode = configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, "flag_" + displayName);
-            String timezoneId = configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, "timezone_" + displayName);
+			String note = configManager.getConfiguration(ClanQolConfig.CONFIG_GROUP, "note_" + displayName);
+            String flagCode = configManager.getConfiguration(ClanQolConfig.CONFIG_GROUP, "flag_" + displayName);
+            String timezoneId = configManager.getConfiguration(ClanQolConfig.CONFIG_GROUP, "timezone_" + displayName);
             BufferedImage flagImage = !showTimezones && flagCode != null ? ClanCountryFlags.getFlag(flagCode) : null;
             String timeText = showTimezones && timezoneId != null ? ClanTimezones.currentTime(timezoneId) : null;
 

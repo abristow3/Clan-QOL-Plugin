@@ -1,4 +1,4 @@
-package com.betterclanbroadcasts;
+package com.clanqol.broadcasts;
 
 import net.runelite.api.Client;
 import net.runelite.api.ChatMessageType;

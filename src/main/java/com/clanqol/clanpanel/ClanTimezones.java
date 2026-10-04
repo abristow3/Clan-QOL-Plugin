@@ -1,4 +1,4 @@
-package com.betterclanbroadcasts;
+package com.clanqol.clanpanel;
 
 import java.time.DateTimeException;
 import java.time.ZoneId;
@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 // validates/normalizes timezone input and formats the current time for a stored zone id
-final class ClanTimezones
+public final class ClanTimezones
 {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final Map<String, String> IANA_IDS_LOWER = buildIanaIndex();
@@ -19,7 +19,7 @@ final class ClanTimezones
     {
     }
 
-    static String normalize(String input)
+    public static String normalize(String input)
     {
         if (input == null || input.trim().isEmpty())
         {
