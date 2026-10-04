@@ -3,6 +3,7 @@ package com.clanqol;
 import com.clanqol.broadcasts.ClanCaIconMaintainer;
 import com.clanqol.broadcasts.ClanRankPrefixer;
 import com.clanqol.clanpanel.*;
+import com.clanqol.utils.ClanCsvSync;
 import com.clanqol.utils.ClanPlayerListRows;
 import com.clanqol.utils.ClanSortToggleButton;
 import com.clanqol.utils.HoveredClanMember;
@@ -38,6 +39,11 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.Text;
+import java.awt.image.BufferedImage;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.util.ImageUtil;
+import net.runelite.client.events.ConfigChanged;
 
 @Slf4j
 @PluginDescriptor(
@@ -89,6 +95,12 @@ public class ClanQolPlugin extends Plugin
 	private ClanNoteOverlay clanNoteOverlay;
     @Inject
     private ClanDisplayModeState displayModeState;
+    @Inject
+    private ClientToolbar clientToolbar;
+    @Inject
+    private ClanQolPanel clanQolPanel;
+
+    private NavigationButton navButton;
 
 	private ClanRankPrefixer clanRankPrefixer;
 	private ClanPlayerListSorter clanPlayerListSorter;
@@ -150,6 +162,17 @@ public class ClanQolPlugin extends Plugin
                 () -> displayModeState.setShowTimezones(false),
                 () -> displayModeState.setShowTimezones(true));
         flagTimeToggleButton.startUp();
+
+        ClanCsvSync.syncField(configManager);
+
+        BufferedImage panelIcon = ImageUtil.loadImageResource(getClass(), "/noteicon.png");
+        navButton = NavigationButton.builder()
+                .tooltip("Clan QOL")
+                .icon(panelIcon)
+                .priority(5)
+                .panel(clanQolPanel)
+                .build();
+        clientToolbar.addNavigation(navButton);
     }
 
 	@Override
@@ -175,7 +198,29 @@ public class ClanQolPlugin extends Plugin
 
         flagTimeToggleButton.reset();
         flagTimeToggleButton = null;
+
+        clientToolbar.removeNavigation(navButton);
+        navButton = null;
 	}
+
+    @Subscribe
+    public void onConfigChanged(ConfigChanged event)
+    {
+        if (!ClanQolConfig.CONFIG_GROUP.equals(event.getGroup()) || !ClanCsvSync.CSV_KEY.equals(event.getKey()))
+        {
+            return;
+        }
+
+        // blank or reset value means everything is deleted
+        String csv = Strings.nullToEmpty(event.getNewValue());
+        ClanCsvSync.Result result = ClanCsvSync.apply(configManager, csv, true);
+        if (!result.errors.isEmpty())
+        {
+            log.warn("Clan QOL skipped invalid csv entries: {}", String.join("; ", result.errors));
+        }
+
+        ClanCsvSync.syncField(configManager);
+    }
 
 	@Subscribe
 	public void onChatMessage(ChatMessage event)
@@ -398,6 +443,8 @@ public class ClanQolPlugin extends Plugin
 		{
 			configManager.setConfiguration(ClanQolConfig.CONFIG_GROUP, NOTE_KEY_PREFIX + displayName, note);
 		}
+
+        ClanCsvSync.syncField(configManager);
 	}
 
 	@Nullable
@@ -416,6 +463,8 @@ public class ClanQolPlugin extends Plugin
         {
             configManager.setConfiguration(ClanQolConfig.CONFIG_GROUP, FLAG_KEY_PREFIX + displayName, countryCode);
         }
+
+        ClanCsvSync.syncField(configManager);
     }
 
     @Nullable
@@ -434,6 +483,8 @@ public class ClanQolPlugin extends Plugin
         {
             configManager.setConfiguration(ClanQolConfig.CONFIG_GROUP, TIMEZONE_KEY_PREFIX + displayName, zoneId);
         }
+
+        ClanCsvSync.syncField(configManager);
     }
 
     @Nullable
