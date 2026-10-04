@@ -1,4 +1,4 @@
-package com.betterclanbroadcasts;
+package com.clanqol.utils;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
@@ -13,15 +13,15 @@ import net.runelite.client.util.Text;
 
 // shared row-matching helpers for the clan player list widget, used by both the note/flag
 // overlay and the right-click menu resolver so the grouping/matching logic only lives once
-final class ClanPlayerListRows
+public final class ClanPlayerListRows
 {
 	private static final int ROW_HEIGHT = 15;
 
-	private ClanPlayerListRows()
+	public ClanPlayerListRows()
 	{
 	}
 
-	static Map<Integer, List<Widget>> groupByRow(Widget[] children)
+	public static Map<Integer, List<Widget>> groupByRow(Widget[] children)
 	{
 		Map<Integer, List<Widget>> rowsByIndex = new HashMap<>();
 		for (Widget child : children)
@@ -38,7 +38,7 @@ final class ClanPlayerListRows
 		return rowsByIndex;
 	}
 
-	static Map<String, ClanChannelMember> mapMembersByName(ClanChannel clanChannel)
+	public static Map<String, ClanChannelMember> mapMembersByName(ClanChannel clanChannel)
 	{
 		Map<String, ClanChannelMember> membersByName = new HashMap<>();
 		for (ClanChannelMember member : clanChannel.getMembers())
@@ -49,7 +49,7 @@ final class ClanPlayerListRows
 		return membersByName;
 	}
 
-	static ClanChannelMember findMember(List<Widget> rowWidgets, Map<String, ClanChannelMember> membersByName)
+	public static ClanChannelMember findMember(List<Widget> rowWidgets, Map<String, ClanChannelMember> membersByName)
 	{
 		for (Widget widget : rowWidgets)
 		{
@@ -69,7 +69,7 @@ final class ClanPlayerListRows
 		return null;
 	}
 
-	static boolean isRowAtPoint(List<Widget> rowWidgets, Point point)
+	public static boolean isRowAtPoint(List<Widget> rowWidgets, Point point)
 	{
 		for (Widget widget : rowWidgets)
 		{

@@ -1,4 +1,4 @@
-package com.betterclanbroadcasts;
+package com.clanqol.clanpanel;
 
 import java.awt.image.BufferedImage;
 import java.util.Collections;

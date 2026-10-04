@@ -1,15 +1,17 @@
-package com.betterclanbroadcasts;
+package com.clanqol.broadcasts;
 
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+
+import com.clanqol.ClanQolConfig;
 import net.runelite.client.ui.overlay.Overlay;
 
-class ClanCaIconMaintainer extends Overlay
+public class ClanCaIconMaintainer extends Overlay
 {
-	private final BetterClanBroadcastsConfig config;
+	private final ClanQolConfig config;
 	private final ClanRankPrefixer clanRankPrefixer;
 
-	ClanCaIconMaintainer(BetterClanBroadcastsConfig config, ClanRankPrefixer clanRankPrefixer)
+	public ClanCaIconMaintainer(ClanQolConfig config, ClanRankPrefixer clanRankPrefixer)
 	{
 		this.config = config;
 		this.clanRankPrefixer = clanRankPrefixer;

@@ -1,5 +1,6 @@
-package com.betterclanbroadcasts;
+package com.clanqol.clanpanel;
 
+import com.clanqol.ClanQolConfig;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.clan.ClanChannel;
@@ -119,7 +120,7 @@ public class ClanPlayerListSorter
 
 	private SortMode loadSortMode()
 	{
-		String saved = configManager.getConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, SORT_MODE_CONFIG_KEY);
+		String saved = configManager.getConfiguration(ClanQolConfig.CONFIG_GROUP, SORT_MODE_CONFIG_KEY);
 		if (saved == null)
 		{
 			return SortMode.NAME_ASCENDING;
@@ -140,7 +141,7 @@ public class ClanPlayerListSorter
 
 	private void persistSortMode()
 	{
-		configManager.setConfiguration(BetterClanBroadcastsConfig.CONFIG_GROUP, SORT_MODE_CONFIG_KEY, sortMode.name());
+		configManager.setConfiguration(ClanQolConfig.CONFIG_GROUP, SORT_MODE_CONFIG_KEY, sortMode.name());
 	}
 
 	private void sort()

@@ -1,13 +1,13 @@
-package com.betterclanbroadcasts;
+package com.clanqol;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigGroup(BetterClanBroadcastsConfig.CONFIG_GROUP)
-public interface BetterClanBroadcastsConfig extends Config
+@ConfigGroup(ClanQolConfig.CONFIG_GROUP)
+public interface ClanQolConfig extends Config
 {
-	String CONFIG_GROUP = "betterclanbroadcasts";
+	String CONFIG_GROUP = "clanqol";
 
 	@ConfigItem(
 			keyName = "enabled",

@@ -1,19 +1,19 @@
-package com.betterclanbroadcasts;
+package com.clanqol.clanpanel;
 
 import com.google.inject.Singleton;
 
 // shared toggle state
 @Singleton
-class ClanDisplayModeState
+public class ClanDisplayModeState
 {
     private volatile boolean showTimezones = false;
 
-    boolean isShowTimezones()
+    public boolean isShowTimezones()
     {
         return showTimezones;
     }
 
-    void setShowTimezones(boolean showTimezones)
+    public void setShowTimezones(boolean showTimezones)
     {
         this.showTimezones = showTimezones;
     }
