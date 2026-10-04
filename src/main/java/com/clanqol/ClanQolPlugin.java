@@ -165,7 +165,7 @@ public class ClanQolPlugin extends Plugin
 
         ClanCsvSync.syncField(configManager);
 
-        BufferedImage panelIcon = ImageUtil.loadImageResource(getClass(), "/noteicon.png");
+        BufferedImage panelIcon = ImageUtil.loadImageResource(getClass(), "/clanqolnavicon.png");
         navButton = NavigationButton.builder()
                 .tooltip("Clan QOL")
                 .icon(panelIcon)
