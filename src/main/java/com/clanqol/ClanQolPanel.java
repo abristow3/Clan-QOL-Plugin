@@ -2,20 +2,18 @@ package com.clanqol;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
+import java.util.List;
 import javax.inject.Inject;
 import javax.swing.JButton;
-import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.util.Filepath;
 import com.clanqol.utils.ClanCsvSync;
 
 // import/export clan member data as a csv file
@@ -62,23 +60,32 @@ public class ClanQolPanel extends PluginPanel
 
     private void importCsv()
     {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Import Clan QOL CSV");
-        chooser.setFileFilter(new FileNameExtensionFilter("CSV files", "csv"));
-        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
+        List<Filepath> selected = new Filepath.Chooser()
+                .setDialogTitle("Import Clan QOL CSV")
+                .addExtensionFilter("CSV files", "csv")
+                .setIsOpen()
+                .showDialog(this);
+        if (selected == null || selected.isEmpty())
         {
             return;
         }
 
-        try
+        try (BufferedReader reader = selected.get(0).openBufferedReader())
         {
-            String csv = new String(Files.readAllBytes(chooser.getSelectedFile().toPath()), StandardCharsets.UTF_8);
-            if (csv.startsWith("\uFEFF"))
+            StringBuilder csv = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null)
             {
-                csv = csv.substring(1);
+                csv.append(line).append('\n');
             }
 
-            ClanCsvSync.Result result = ClanCsvSync.apply(configManager, csv, false);
+            String text = csv.toString();
+            if (text.startsWith("\uFEFF"))
+            {
+                text = text.substring(1);
+            }
+
+            ClanCsvSync.Result result = ClanCsvSync.apply(configManager, text, false);
             ClanCsvSync.syncField(configManager);
 
             String message = "Imported " + result.applied + " clan members.";
@@ -103,22 +110,20 @@ public class ClanQolPanel extends PluginPanel
             return;
         }
 
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Export Clan QOL CSV");
-        chooser.setFileFilter(new FileNameExtensionFilter("CSV files", "csv"));
-        chooser.setSelectedFile(new File("clan-qol.csv"));
-        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+        List<Filepath> selected = new Filepath.Chooser()
+                .setDialogTitle("Export Clan QOL CSV")
+                .addExtensionFilter("CSV files", "csv")
+                .setDefaultExtension("csv")
+                .setFileName("clan-qol.csv")
+                .setIsSave()
+                .showDialog(this);
+        if (selected == null || selected.isEmpty())
         {
             return;
         }
 
-        File file = chooser.getSelectedFile();
-        if (!file.getName().toLowerCase().endsWith(".csv"))
-        {
-            file = new File(file.getParentFile(), file.getName() + ".csv");
-        }
-
-        if (file.exists() && JOptionPane.showConfirmDialog(this, file.getName() + " already exists. Overwrite?",
+        Filepath file = selected.get(0);
+        if (file.exists() && JOptionPane.showConfirmDialog(this, file.getFileName() + " already exists. Overwrite?",
                 TITLE, JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION)
         {
             return;
@@ -126,8 +131,8 @@ public class ClanQolPanel extends PluginPanel
 
         try
         {
-            Files.write(file.toPath(), csv.getBytes(StandardCharsets.UTF_8));
-            JOptionPane.showMessageDialog(this, "Exported to " + file.getName(), TITLE, JOptionPane.INFORMATION_MESSAGE);
+            file.write(csv);
+            JOptionPane.showMessageDialog(this, "Exported to " + file.getFileName(), TITLE, JOptionPane.INFORMATION_MESSAGE);
         }
         catch (IOException e)
         {
