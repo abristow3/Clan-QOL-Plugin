@@ -169,7 +169,7 @@ public class ClanQolPlugin extends Plugin
         navButton = NavigationButton.builder()
                 .tooltip("Clan QOL")
                 .icon(panelIcon)
-                .priority(5)
+                .priority(config.menuPriority())
                 .panel(clanQolPanel)
                 .build();
         clientToolbar.addNavigation(navButton);

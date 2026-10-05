@@ -64,10 +64,20 @@ public interface ClanQolConfig extends Config
         return true;
     }
 
+	@ConfigItem(
+			keyName = "menuPriority",
+			name = "Sidebar Priority",
+			position = 6,
+			description = "Adjust the runelite sidebar priority. Lower priority => higher on sidebar. Restart the client to take effect")
+	default int menuPriority()
+	{
+		return 40;
+	}
+
     @ConfigItem(
             keyName = "csvData",
             name = "Member data",
-            position = 6,
+            position = 7,
             description = "One line per member: name,flag,timezone,note. Click out of the box to apply. Clearing the box or hitting reset deletes all entries"    )
     default String csvData()
     {
