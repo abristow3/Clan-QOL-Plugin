@@ -75,9 +75,20 @@ public interface ClanQolConfig extends Config
 	}
 
     @ConfigItem(
+            keyName = "hideSidePanelButton",
+            name = "Hide side panel button",
+            position = 7,
+            description = "Hide the Clan QOL button from the sidebar. Uncheck to show it again"
+    )
+    default boolean hideSidePanelButton()
+    {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "csvData",
             name = "Member data",
-            position = 7,
+            position = 99,
             description = "One line per member: name,flag,timezone,note. Click out of the box to apply. Clearing the box or hitting reset deletes all entries"    )
     default String csvData()
     {

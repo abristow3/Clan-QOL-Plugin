@@ -101,6 +101,7 @@ public class ClanQolPlugin extends Plugin
     private ClanQolPanel clanQolPanel;
 
     private NavigationButton navButton;
+    private boolean navButtonAdded;
 
 	private ClanRankPrefixer clanRankPrefixer;
 	private ClanPlayerListSorter clanPlayerListSorter;
@@ -172,7 +173,7 @@ public class ClanQolPlugin extends Plugin
                 .priority(config.menuPriority())
                 .panel(clanQolPanel)
                 .build();
-        clientToolbar.addNavigation(navButton);
+        updateNavButton();
     }
 
 	@Override
@@ -199,14 +200,30 @@ public class ClanQolPlugin extends Plugin
         flagTimeToggleButton.reset();
         flagTimeToggleButton = null;
 
-        clientToolbar.removeNavigation(navButton);
+        if (navButtonAdded)
+        {
+            clientToolbar.removeNavigation(navButton);
+            navButtonAdded = false;
+        }
+
         navButton = null;
 	}
 
     @Subscribe
     public void onConfigChanged(ConfigChanged event)
     {
-        if (!ClanQolConfig.CONFIG_GROUP.equals(event.getGroup()) || !ClanCsvSync.CSV_KEY.equals(event.getKey()))
+        if (!ClanQolConfig.CONFIG_GROUP.equals(event.getGroup()))
+        {
+            return;
+        }
+
+        if ("hideSidePanelButton".equals(event.getKey()))
+        {
+            updateNavButton();
+            return;
+        }
+
+        if (!ClanCsvSync.CSV_KEY.equals(event.getKey()))
         {
             return;
         }
@@ -508,6 +525,26 @@ public class ClanQolPlugin extends Plugin
 			hoveredClanMember = new HoveredClanMember(displayName, note);
 		}
 	}
+
+    private void updateNavButton()
+    {
+        if (navButton == null)
+        {
+            return;
+        }
+
+        boolean hide = config.hideSidePanelButton();
+        if (hide && navButtonAdded)
+        {
+            clientToolbar.removeNavigation(navButton);
+            navButtonAdded = false;
+        }
+        else if (!hide && !navButtonAdded)
+        {
+            clientToolbar.addNavigation(navButton);
+            navButtonAdded = true;
+        }
+    }
 
 	@Provides
 	ClanQolConfig provideConfig(ConfigManager configManager)
