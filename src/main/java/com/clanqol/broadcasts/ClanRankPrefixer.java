@@ -29,7 +29,7 @@ public class ClanRankPrefixer {
 
 	// keeps CA messages in memory to check and refresh icon for 6 hours then stops tracking
 	private static final int CA_ICON_TTL_TICKS = 36000;
-	private static final int CHATBOX_SCROLLAREA_ID = 10616890;
+	private static final int CHATBOX_SCROLLAREA_ID = 10616891;
 
 	private final Client client;
 	private final ClientThread clientThread;
@@ -185,7 +185,7 @@ public class ClanRankPrefixer {
 				continue;
 			}
 
-			if (Text.removeTags(child.getText()).contains(cleanText)) {
+			if (Text.toJagexName(Text.removeTags(child.getText())).contains(cleanText)) {
 				return child;
 			}
 		}
