@@ -10,6 +10,7 @@ import net.runelite.api.clan.ClanTitle;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.widgets.Widget;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.ChatIconManager;
 import net.runelite.client.util.Text;
@@ -29,7 +30,6 @@ public class ClanRankPrefixer {
 
 	// keeps CA messages in memory to check and refresh icon for 6 hours then stops tracking
 	private static final int CA_ICON_TTL_TICKS = 36000;
-	private static final int CHATBOX_SCROLLAREA_ID = 10616891;
 
 	private final Client client;
 	private final ClientThread clientThread;
@@ -158,7 +158,7 @@ public class ClanRankPrefixer {
 			return;
 		}
 
-		Widget scrollArea = client.getWidget(CHATBOX_SCROLLAREA_ID);
+        Widget scrollArea = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
 		Widget[] children = scrollArea == null ? null : scrollArea.getDynamicChildren();
 		if (children == null) {
 			children = new Widget[0];
