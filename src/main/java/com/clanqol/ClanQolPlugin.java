@@ -97,9 +97,9 @@ public class ClanQolPlugin extends Plugin
     private ClanDisplayModeState displayModeState;
     @Inject
     private ClientToolbar clientToolbar;
-    @Inject
-    private ClanQolPanel clanQolPanel;
 
+
+    private ClanQolPanel clanQolPanel;
     private NavigationButton navButton;
     private boolean navButtonAdded;
 
@@ -165,6 +165,9 @@ public class ClanQolPlugin extends Plugin
         flagTimeToggleButton.startUp();
 
         ClanCsvSync.syncField(configManager);
+
+        clanQolPanel = injector.getInstance(ClanQolPanel.class);
+        clanQolPanel.init();
 
         BufferedImage panelIcon = ImageUtil.loadImageResource(getClass(), "/clanqolnavicon.png");
         navButton = NavigationButton.builder()

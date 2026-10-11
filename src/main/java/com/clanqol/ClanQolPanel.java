@@ -30,9 +30,8 @@ public class ClanQolPanel extends PluginPanel
         this.configManager = configManager;
     }
 
-    private void rebuild()
+    public void init()
     {
-        removeAll();
         setLayout(new BorderLayout(0, 3));
         setBorder(new EmptyBorder(0, 5, 0, 5));
         setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -48,14 +47,6 @@ public class ClanQolPanel extends PluginPanel
         importExportGroup.add(exportButton);
 
         add(importExportGroup, BorderLayout.NORTH);
-
-        revalidate();
-    }
-
-    @Override
-    public void onActivate()
-    {
-        rebuild();
     }
 
     private void importCsv()
