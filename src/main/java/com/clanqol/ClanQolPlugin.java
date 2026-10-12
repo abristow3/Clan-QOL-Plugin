@@ -321,7 +321,7 @@ public class ClanQolPlugin extends Plugin
 		// clan member names carry color tags same as friends do
 		setHoveredClanMember(Text.toJagexName(Text.removeTags(target)));
 
-			client.createMenuEntry(-1)
+			client.getMenu().createMenuEntry(-1)
 					.setOption(hoveredClanMember == null || hoveredClanMember.getNote() == null ? ADD_NOTE : EDIT_NOTE)
 					.setType(MenuAction.RUNELITE)
 					.setTarget(target)
@@ -347,7 +347,7 @@ public class ClanQolPlugin extends Plugin
 
 		String existingFlagCode = getClanMemberFlag(Text.toJagexName(Text.removeTags(target)));
 
-            client.createMenuEntry(-1)
+            client.getMenu().createMenuEntry(-1)
                     .setOption(existingFlagCode == null ? ADD_FLAG : EDIT_FLAG)
                     .setType(MenuAction.RUNELITE)
                     .setTarget(target)
@@ -388,7 +388,7 @@ public class ClanQolPlugin extends Plugin
 
         String existingTimezoneId = getClanMemberTimezone(Text.toJagexName(Text.removeTags(target)));
 
-        client.createMenuEntry(-1)
+        client.getMenu().createMenuEntry(-1)
                 .setOption(existingTimezoneId == null ? ADD_TIMEZONE : EDIT_TIMEZONE)
                 .setType(MenuAction.RUNELITE)
                 .setTarget(target)
@@ -432,7 +432,7 @@ public class ClanQolPlugin extends Plugin
         // mass toggle, also reachable via the header button
         boolean currentlyShowingTimezones = displayModeState.isShowTimezones();
 
-        client.createMenuEntry(-1)
+        client.getMenu().createMenuEntry(-1)
                 .setOption(currentlyShowingTimezones ? SHOW_FLAGS_ALL : SHOW_TIME_ALL)
                 .setType(MenuAction.RUNELITE)
                 .setTarget("")
