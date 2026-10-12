@@ -44,6 +44,8 @@ import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.events.ConfigChanged;
+import java.awt.Rectangle;
+import java.util.function.Consumer;
 
 @Slf4j
 @PluginDescriptor(
@@ -74,6 +76,7 @@ public class ClanQolPlugin extends Plugin
 
     private static final String SHOW_TIME_ALL = "Show Time for All";
     private static final String SHOW_FLAGS_ALL = "Show Flags for All";
+    private static final String LOOKUP = "Lookup";
 
     private static final int CLAN_GROUP_ID = WidgetUtil.componentToInterface(InterfaceID.ClansSidepanel.PLAYERLIST);
 
@@ -120,6 +123,7 @@ public class ClanQolPlugin extends Plugin
 
 	@Getter
 	private HoveredClanMember hoveredClanMember = null;
+    private Consumer<MenuEntry> hiscoreLookup;
 
 	@Override
 	protected void startUp() throws Exception
@@ -210,6 +214,7 @@ public class ClanQolPlugin extends Plugin
         }
 
         navButton = null;
+        hiscoreLookup = null;
 	}
 
     @Subscribe
@@ -270,6 +275,29 @@ public class ClanQolPlugin extends Plugin
 	@Subscribe
 	public void onMenuOpened(MenuOpened event)
 	{
+        captureHiscoreLookup(event.getMenuEntries());
+
+        String broadcastMember = resolveBroadcastMemberUnderMouse();
+        if (broadcastMember != null)
+        {
+            client.getMenu().createMenuEntry(-1)
+                    .setOption(LOOKUP)
+                    .setType(MenuAction.RUNELITE)
+                    .setTarget(ColorUtil.wrapWithColorTag(broadcastMember, Color.WHITE))
+                    .onClick(e ->
+                    {
+                        if (hiscoreLookup == null)
+                        {
+                            client.addChatMessage(ChatMessageType.CONSOLE, "",
+                                    ColorUtil.wrapWithColorTag("Right-click any player in your friends list, clan list, or chat once, then try Lookup again.", Color.RED), null);
+                            return;
+                        }
+
+                        hiscoreLookup.accept(e);
+                    });
+            return;
+        }
+
 		MenuEntry clanEntry = findClanMenuEntry(event.getMenuEntries());
 		String target = clanEntry != null ? clanEntry.getTarget() : resolveClanMemberUnderMouse();
 
@@ -546,6 +574,52 @@ public class ClanQolPlugin extends Plugin
         {
             clientToolbar.addNavigation(navButton);
             navButtonAdded = true;
+        }
+    }
+
+    // the member of the broadcast line under the mouse
+    private String resolveBroadcastMemberUnderMouse()
+    {
+        if (!config.enabled() || clanRankPrefixer == null)
+        {
+            return null;
+        }
+
+        Widget scrollArea = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
+        Widget[] lines = scrollArea == null ? null : scrollArea.getDynamicChildren();
+        if (lines == null)
+        {
+            return null;
+        }
+
+        Point mouse = client.getMouseCanvasPosition();
+        for (Widget line : lines)
+        {
+            if (line == null || line.isHidden() || line.getText() == null || line.getText().isEmpty())
+            {
+                continue;
+            }
+
+            Rectangle bounds = line.getBounds();
+            if (bounds != null && bounds.contains(mouse.getX(), mouse.getY()))
+            {
+                return clanRankPrefixer.findBroadcastMember(Text.toJagexName(Text.removeTags(line.getText())));
+            }
+        }
+
+        return null;
+    }
+
+    private void captureHiscoreLookup(MenuEntry[] entries)
+    {
+        for (MenuEntry entry : entries)
+        {
+            Consumer<MenuEntry> callback = entry.onClick();
+            if (entry.getType() == MenuAction.RUNELITE && LOOKUP.equals(entry.getOption()) && callback != null
+                    && callback.getClass().getName().startsWith("net.runelite.client.plugins.hiscore."))
+            {
+                hiscoreLookup = callback;
+            }
         }
     }
 

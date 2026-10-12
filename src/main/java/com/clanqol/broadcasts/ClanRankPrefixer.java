@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Slf4j
 public class ClanRankPrefixer {
@@ -36,6 +38,15 @@ public class ClanRankPrefixer {
 	private final ChatIconManager chatIconManager;
 	private final Queue<PendingEdit> pendingEdits = new ArrayDeque<>();
 	private final List<PendingCaIcon> pendingCaIcons = new ArrayList<>();
+    private static final int MAX_RECENT_BROADCASTS = 200;
+
+    // recent broadcast member name being used for the right-click Lookup
+    private final Map<String, String> recentBroadcasts = new LinkedHashMap<String, String>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+            return size() > MAX_RECENT_BROADCASTS;
+        }
+    };
 
 	public ClanRankPrefixer(Client client, ClientThread clientThread, ChatIconManager chatIconManager) {
 		this.client = client;
@@ -76,6 +87,8 @@ public class ClanRankPrefixer {
 			log.debug("No clan member match for broadcast: '{}'", strippedMessage);
 			return;
 		}
+
+        recentBroadcasts.put(strippedMessage, Text.toJagexName(matched.getName()));
 
 		ClanTitle title = clanSettings.titleForRank(matched.getRank());
 		if (title == null) {
@@ -121,6 +134,17 @@ public class ClanRankPrefixer {
 
 		return matched;
 	}
+
+    // the member a recent broadcats was about, if this chat line contains that broadcast
+    public String findBroadcastMember(String cleanLineText) {
+        for (Map.Entry<String, String> entry : recentBroadcasts.entrySet()) {
+            if (cleanLineText.contains(entry.getKey())) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
+    }
 
 	public void onGameTick(GameTick event) {
 		Iterator<PendingCaIcon> caIt = pendingCaIcons.iterator();
