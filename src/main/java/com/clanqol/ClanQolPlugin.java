@@ -46,6 +46,7 @@ import net.runelite.client.util.ImageUtil;
 import net.runelite.client.events.ConfigChanged;
 import java.awt.Rectangle;
 import java.util.function.Consumer;
+import net.runelite.api.events.ClientTick;
 
 @Slf4j
 @PluginDescriptor(
@@ -272,6 +273,13 @@ public class ClanQolPlugin extends Plugin
         flagTimeToggleButton.onGameTick();
 	}
 
+    @Subscribe
+    public void onClientTick(ClientTick event)
+    {
+        // entries for whatever is hovered exist every tick, hovering any player is enough to find the HiScore Lookup
+        captureHiscoreLookup(client.getMenu().getMenuEntries());
+    }
+
 	@Subscribe
 	public void onMenuOpened(MenuOpened event)
 	{
@@ -289,7 +297,7 @@ public class ClanQolPlugin extends Plugin
                         if (hiscoreLookup == null)
                         {
                             client.addChatMessage(ChatMessageType.CONSOLE, "",
-                                    ColorUtil.wrapWithColorTag("Right-click any player in your friends list, clan list, or chat once, then try Lookup again.", Color.RED), null);
+                                    ColorUtil.wrapWithColorTag("Hover over or right-click any player in your friends list, clan list, or chat once, then try Lookup again.", Color.RED), null);
                             return;
                         }
 
