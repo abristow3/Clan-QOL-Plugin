@@ -297,7 +297,7 @@ public class ClanQolPlugin extends Plugin
                         if (hiscoreLookup == null)
                         {
                             client.addChatMessage(ChatMessageType.CONSOLE, "",
-                                    ColorUtil.wrapWithColorTag("Hover over or right-click any player in your friends list, clan list, or chat once, then try Lookup again.", Color.RED), null);
+                                    ColorUtil.wrapWithColorTag("[Clan-QOL] Hover over or right-click any player in your friends list, clan list, or chat once, then try Lookup again.", Color.RED), null);
                             return;
                         }
 
