@@ -585,7 +585,7 @@ public class ClanQolPlugin extends Plugin
         }
     }
 
-    // the member of the broadcast line under the mouse
+    // the member of the broadcast line under the mouse only while the mouse is inside visible chat area
     private String resolveBroadcastMemberUnderMouse()
     {
         if (!config.enabled() || clanRankPrefixer == null)
@@ -594,13 +594,24 @@ public class ClanQolPlugin extends Plugin
         }
 
         Widget scrollArea = client.getWidget(InterfaceID.Chatbox.SCROLLAREA);
-        Widget[] lines = scrollArea == null ? null : scrollArea.getDynamicChildren();
-        if (lines == null)
+		if (scrollArea == null || scrollArea.isHidden())
         {
             return null;
         }
 
-        Point mouse = client.getMouseCanvasPosition();
+		Point mouse = client.getMouseCanvasPosition();
+		Rectangle viewport = scrollArea.getBounds();
+		if (viewport == null || !viewport.contains(mouse.getX(), mouse.getY()))
+		{
+			return null;
+		}
+
+		Widget[] lines = scrollArea.getDynamicChildren();
+		if (lines == null)
+		{
+			return null;
+		}
+
         for (Widget line : lines)
         {
             if (line == null || line.isHidden() || line.getText() == null || line.getText().isEmpty())
