@@ -18,19 +18,24 @@ public class ClanSortToggleButton
 	// if the icon looks backwards in game
 	private static final int SPRITE_ASCENDING = 1051;
 	private static final int SPRITE_DESCENDING = 1050;
-
+	private static final int OPACITY_ACTIVE = 0;
+	private static final int OPACITY_UNSORTED = 150;
 	private static final int BUTTON_WIDTH = 8;
 	private static final int BUTTON_HEIGHT = 8;
 
 	private final Client client;
 	private final ClientThread clientThread;
+	private final int parentComponentId;
 	private final int x;
 	private final int y;
 	private final String sortAscendingTooltip;
 	private final String sortDescendingTooltip;
+	private final String clearSortTooltip;
 	private final BooleanSupplier isAscending;
+	private final BooleanSupplier isDescending;
 	private final Runnable onAscendingClick;
 	private final Runnable onDescendingClick;
+	private final Runnable onClearClick;
 
 	private Widget button;
 	private Widget parentAtCreation;
@@ -42,15 +47,30 @@ public class ClanSortToggleButton
 								String sortAscendingTooltip, String sortDescendingTooltip,
 								BooleanSupplier isAscending, Runnable onAscendingClick, Runnable onDescendingClick)
 	{
+		this(client, clientThread, InterfaceID.ClansSidepanel.UNIVERSE, x, y,
+				sortAscendingTooltip, sortDescendingTooltip, null,
+				isAscending, null,
+				onAscendingClick, onDescendingClick, null);
+	}
+
+	public ClanSortToggleButton(Client client, ClientThread clientThread, int parentComponentId, int x, int y,
+								String sortAscendingTooltip, String sortDescendingTooltip, String clearSortTooltip,
+								BooleanSupplier isAscending, BooleanSupplier isDescending,
+								Runnable onAscendingClick, Runnable onDescendingClick, Runnable onClearClick)
+	{
 		this.client = client;
 		this.clientThread = clientThread;
+		this.parentComponentId = parentComponentId;
 		this.x = x;
 		this.y = y;
 		this.sortAscendingTooltip = sortAscendingTooltip;
 		this.sortDescendingTooltip = sortDescendingTooltip;
+		this.clearSortTooltip = clearSortTooltip;
 		this.isAscending = isAscending;
+		this.isDescending = isDescending;
 		this.onAscendingClick = onAscendingClick;
 		this.onDescendingClick = onDescendingClick;
+		this.onClearClick = onClearClick;
 	}
 
 	// call once from startUp. panel probably isnt open yet so schedule it
@@ -62,7 +82,7 @@ public class ClanSortToggleButton
 	// call from onGameTick amd recreates the button if the panel got closed and reopened
 	public void onGameTick()
 	{
-		Widget currentParent = client.getWidget(InterfaceID.ClansSidepanel.UNIVERSE);
+		Widget currentParent = client.getWidget(parentComponentId);
 
 		if (currentParent == null)
 		{
@@ -89,9 +109,14 @@ public class ClanSortToggleButton
 		parentAtCreation = null;
 	}
 
+	private boolean isThreeState()
+	{
+		return isDescending != null && onClearClick != null;
+	}
+
 	private void createButton()
 	{
-		Widget parent = client.getWidget(InterfaceID.ClansSidepanel.UNIVERSE);
+		Widget parent = client.getWidget(parentComponentId);
 		if (parent == null)
 		{
 			button = null;
@@ -108,6 +133,7 @@ public class ClanSortToggleButton
 		button.setOriginalY(y);
 		button.setOnOpListener((JavaScriptCallback) ev -> clientThread.invokeLater(this::handleClick));
 		button.setHasListener(true);
+		button.setNoClickThrough(true);
 		button.revalidate();
 
 		parentAtCreation = parent;
@@ -120,6 +146,10 @@ public class ClanSortToggleButton
 		if (isAscending.getAsBoolean())
 		{
 			onDescendingClick.run();
+		}
+		else if (isThreeState() && isDescending.getAsBoolean())
+		{
+			onClearClick.run();
 		}
 		else
 		{
@@ -137,8 +167,35 @@ public class ClanSortToggleButton
 		}
 
 		boolean ascendingActive = isAscending.getAsBoolean();
-		button.setSpriteId(ascendingActive ? SPRITE_ASCENDING : SPRITE_DESCENDING);
-		button.setAction(0, ascendingActive ? sortDescendingTooltip : sortAscendingTooltip);
+
+		if (!isThreeState())
+		{
+			button.setSpriteId(ascendingActive ? SPRITE_ASCENDING : SPRITE_DESCENDING);
+			button.setOpacity(OPACITY_ACTIVE);
+			button.setAction(0, ascendingActive ? sortDescendingTooltip : sortAscendingTooltip);
+			return;
+		}
+
+		boolean descendingActive = isDescending.getAsBoolean();
+		if (ascendingActive)
+		{
+			button.setSpriteId(SPRITE_ASCENDING);
+			button.setOpacity(OPACITY_ACTIVE);
+			button.setAction(0, sortDescendingTooltip);
+		}
+		else if (descendingActive)
+		{
+			button.setSpriteId(SPRITE_DESCENDING);
+			button.setOpacity(OPACITY_ACTIVE);
+			button.setAction(0, clearSortTooltip);
+		}
+		else
+		{
+			// unsorted, dimmed arrow hinting what a click will do
+			button.setSpriteId(SPRITE_ASCENDING);
+			button.setOpacity(OPACITY_UNSORTED);
+			button.setAction(0, sortAscendingTooltip);
+		}
 	}
 
 	private void hideButton()

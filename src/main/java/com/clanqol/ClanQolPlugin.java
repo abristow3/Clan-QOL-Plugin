@@ -3,6 +3,7 @@ package com.clanqol;
 import com.clanqol.broadcasts.ClanCaIconMaintainer;
 import com.clanqol.broadcasts.ClanRankPrefixer;
 import com.clanqol.clanpanel.*;
+import com.clanqol.clanpanel.ClanMemberListSorter;
 import com.clanqol.utils.ClanCsvSync;
 import com.clanqol.utils.ClanPlayerListRows;
 import com.clanqol.utils.ClanSortToggleButton;
@@ -111,6 +112,7 @@ public class ClanQolPlugin extends Plugin
 	private ClanPlayerListSorter clanPlayerListSorter;
 	private ClanCaIconMaintainer clanCaIconMaintainer;
 
+	// for clan player list widget
 	private static final int SORT_BUTTON_Y = 33;
 	private static final int WORLD_SORT_BUTTON_X = 140;
     private static final int FLAG_TIME_TOGGLE_X = 108;
@@ -120,7 +122,17 @@ public class ClanQolPlugin extends Plugin
 	private ClanSortToggleButton worldSortButton;
 	private ClanSortToggleButton nameSortButton;
 	private ClanSortToggleButton rankSortButton;
-    private ClanSortToggleButton flagTimeToggleButton;
+	private ClanSortToggleButton flagTimeToggleButton;
+
+	// for clan settings -> members widget
+	private static final int MEMBER_LIST_HEADER_PARENT = InterfaceID.ClansMembers.HEADERCONTENTS;
+	private static final int MEMBER_NAME_BUTTON_X = 78;    // left edge of the blank name header
+	private static final int MEMBER_RANK_BUTTON_X = 168;  // HEADER1 RelativeX (164) + 4
+	private static final int MEMBER_BUTTON_Y = 7;         // HEADER1 RelativeY (2) + (Height 18 - 8) / 2
+
+	private ClanMemberListSorter memberListSorter;
+	private ClanSortToggleButton memberNameSortButton;
+	private ClanSortToggleButton memberRankSortButton;
 
 	@Getter
 	private HoveredClanMember hoveredClanMember = null;
@@ -169,7 +181,28 @@ public class ClanQolPlugin extends Plugin
                 () -> displayModeState.setShowTimezones(true));
         flagTimeToggleButton.startUp();
 
-        ClanCsvSync.syncField(configManager);
+		memberListSorter = new ClanMemberListSorter(client, configManager);
+
+		memberNameSortButton = new ClanSortToggleButton(client, clientThread,
+				MEMBER_LIST_HEADER_PARENT, MEMBER_NAME_BUTTON_X, MEMBER_BUTTON_Y,
+				"Sort A-Z", "Sort Z-A", null,
+				() -> memberListSorter.getSortMode() == ClanMemberListSorter.SortMode.NONE, null,
+				() -> memberListSorter.setSortMode(ClanMemberListSorter.SortMode.NONE),
+				() -> memberListSorter.setSortMode(ClanMemberListSorter.SortMode.NAME_DESCENDING),
+				null);
+		memberNameSortButton.startUp();
+
+		memberRankSortButton = new ClanSortToggleButton(client, clientThread,
+				MEMBER_LIST_HEADER_PARENT, MEMBER_RANK_BUTTON_X, MEMBER_BUTTON_Y,
+				"Sort highest rank first", "Sort lowest rank first", "Clear sort",
+				() -> memberListSorter.getSortMode() == ClanMemberListSorter.SortMode.RANK_ASCENDING,
+				() -> memberListSorter.getSortMode() == ClanMemberListSorter.SortMode.RANK_DESCENDING,
+				() -> memberListSorter.setSortMode(ClanMemberListSorter.SortMode.RANK_ASCENDING),
+				() -> memberListSorter.setSortMode(ClanMemberListSorter.SortMode.RANK_DESCENDING),
+				() -> memberListSorter.setSortMode(ClanMemberListSorter.SortMode.NONE));
+		memberRankSortButton.startUp();
+
+		ClanCsvSync.syncField(configManager);
 
         clanQolPanel = injector.getInstance(ClanQolPanel.class);
         clanQolPanel.init();
@@ -208,7 +241,17 @@ public class ClanQolPlugin extends Plugin
         flagTimeToggleButton.reset();
         flagTimeToggleButton = null;
 
-        if (navButtonAdded)
+		ClanMemberListSorter sorter = memberListSorter;
+		clientThread.invoke(sorter::reset);
+		memberListSorter = null;
+
+		memberNameSortButton.reset();
+		memberNameSortButton = null;
+
+		memberRankSortButton.reset();
+		memberRankSortButton = null;
+
+		if (navButtonAdded)
         {
             clientToolbar.removeNavigation(navButton);
             navButtonAdded = false;
@@ -273,12 +316,20 @@ public class ClanQolPlugin extends Plugin
         flagTimeToggleButton.onGameTick();
 	}
 
-    @Subscribe
-    public void onClientTick(ClientTick event)
-    {
-        // entries for whatever is hovered exist every tick, hovering any player is enough to find the HiScore Lookup
-        captureHiscoreLookup(client.getMenu().getMenuEntries());
-    }
+	@Subscribe
+	public void onClientTick(ClientTick event)
+	{
+		captureHiscoreLookup(client.getMenu().getMenuEntries());
+
+		if (!config.enabled())
+		{
+			return;
+		}
+
+		memberListSorter.onClientTick();
+		memberNameSortButton.onGameTick();
+		memberRankSortButton.onGameTick();
+	}
 
 	@Subscribe
 	public void onMenuOpened(MenuOpened event)
