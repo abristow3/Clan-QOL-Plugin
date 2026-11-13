@@ -26,6 +26,12 @@ Allows you to country flag icons next to clan members using the 2-digit country 
 
 <img width="192" height="314" alt="Screenshot 2026-09-13 at 11 31 45 AM" src="https://github.com/user-attachments/assets/c8c35f8b-772a-4394-bece-838c35bf7cc7" />
 
+## Clan Member Settings Interface Sorting
+Adds a much desired sorting toggle for the username column and rank column in the Clan Member Settings Interface allowing for much easier bulk rank changing.
+
+
+https://github.com/user-attachments/assets/3099f7bf-c324-42c7-8a94-95f0fbade878
+
 
 ## Clan Broadcast Fixes:
 It fixes clan ranks for:
