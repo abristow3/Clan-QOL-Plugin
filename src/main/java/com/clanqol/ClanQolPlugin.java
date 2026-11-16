@@ -310,10 +310,20 @@ public class ClanQolPlugin extends Plugin
 		}
 		clanRankPrefixer.onGameTick(event);
 		clanPlayerListSorter.onGameTick();
-		worldSortButton.onGameTick();
-		nameSortButton.onGameTick();
-		rankSortButton.onGameTick();
-        flagTimeToggleButton.onGameTick();
+
+		if (!config.hideClanMemberSortButtons()) {
+			worldSortButton.onGameTick();
+			nameSortButton.onGameTick();
+			rankSortButton.onGameTick();
+			flagTimeToggleButton.onGameTick();
+		}
+		else
+		{
+			worldSortButton.hideButton();
+			nameSortButton.hideButton();
+			rankSortButton.hideButton();
+			flagTimeToggleButton.hideButton();
+		}
 	}
 
 	@Subscribe
@@ -327,8 +337,16 @@ public class ClanQolPlugin extends Plugin
 		}
 
 		memberListSorter.onClientTick();
-		memberNameSortButton.onGameTick();
-		memberRankSortButton.onGameTick();
+
+		if (!config.hideClanSettingsSortButtons()) {
+			memberNameSortButton.onGameTick();
+			memberRankSortButton.onGameTick();
+		}
+		else
+		{
+			memberNameSortButton.hideButton();
+			memberRankSortButton.hideButton();
+		}
 	}
 
 	@Subscribe

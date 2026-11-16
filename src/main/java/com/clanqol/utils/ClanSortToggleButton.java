@@ -93,10 +93,15 @@ public class ClanSortToggleButton
 			return;
 		}
 
-		if (button == null || currentParent != parentAtCreation)
+		if (button == null || currentParent != parentAtCreation || !isAttachedTo(currentParent))
 		{
 			createButton();
 			return;
+		}
+
+		if (button.isSelfHidden())
+		{
+			button.setHidden(false);
 		}
 
 		syncButton();
@@ -106,7 +111,27 @@ public class ClanSortToggleButton
 	public void reset()
 	{
 		hideButton();
+		button = null;
 		parentAtCreation = null;
+	}
+
+	private boolean isAttachedTo(Widget parent)
+	{
+		Widget[] children = parent.getDynamicChildren();
+		if (children == null)
+		{
+			return false;
+		}
+
+		for (Widget child : children)
+		{
+			if (child == button)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private boolean isThreeState()
@@ -198,7 +223,7 @@ public class ClanSortToggleButton
 		}
 	}
 
-	private void hideButton()
+	public void hideButton()
 	{
 		if (button == null)
 		{
@@ -206,6 +231,5 @@ public class ClanSortToggleButton
 		}
 
 		button.setHidden(true);
-		button = null;
 	}
 }

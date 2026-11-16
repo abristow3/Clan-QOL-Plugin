@@ -85,6 +85,28 @@ public interface ClanQolConfig extends Config
         return false;
     }
 
+	@ConfigItem(
+			keyName = "hideClanMemberSortButtons",
+			name = "Hide member sort buttons",
+			position = 8,
+			description = "Hides the sort by name, rank, show flags/timezones, and worlds buttons"
+	)
+	default boolean hideClanMemberSortButtons()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "hideClanSettingsSortButtons",
+			name = "Hide clan settings sort buttons",
+			position = 9,
+			description = "Hides the sort by name and rank buttons in the Clan Settings interface"
+	)
+	default boolean hideClanSettingsSortButtons()
+	{
+		return false;
+	}
+
     @ConfigItem(
             keyName = "csvData",
             name = "Member data",
